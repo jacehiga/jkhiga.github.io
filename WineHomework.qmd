@@ -1,0 +1,119 @@
+---
+Author: Jace Higa
+Date: Janurary 16th, 2025
+---
+**Abstract:**
+
+This is a technical blog post of **both** an HTML file *and* [.qmd file](src/wine_of_pnw.qmd) hosted on GitHub pages.
+
+**Step Up Code:**
+```{r}
+library(tidyverse) 
+library(moderndive)
+library(caret)
+library(dslabs)
+
+wine <- readRDS(gzcon(url("https://github.com/cd-public/DSLM-505/raw/master/dat/wine.rds"))) %>%
+  filter(province=="Oregon" | province=="California" | province=="New York") %>% 
+  mutate(cherry=as.integer(str_detect(description,"[Cc]herry"))) %>% 
+  mutate(lprice=log(price)) %>% 
+  select(lprice, points, cherry, province)
+```
+
+**Explanataion:**
+
+> <span style="color:red;font-weight:bold">TODO</span>: *The first line uploads the library tidyverse into the server which allows us to use many other packages like dplyr, ggplot2, etc. We then read in the dataset set and name it "wine". We then filter such that only the wine with provinces of Oregon, California, and New York are present. We then create a new column called cherry and if it the description has "cherry" or "Cherry" in it then it gives that data point a 1 and if not a zero, since it's a boolean. We then make another column called lprice which takes the log of the price column. We then select the columns named lprice, points, cherry, and province.*
+
+# Multiple Regression
+
+## Linear Models
+
+First run a linear regression model with log of price as the dependent variable and 'points' and 'cherry' as features (variables).
+
+```{r}
+m1 <- lm(lprice ~ points + cherry, data = wine)
+
+get_regression_summaries(m1)
+```
+
+**Explanataion:**
+
+> <span style="color:red;font-weight:bold">TODO</span>: *We use the lm function and type lprice first since it's the independent and then tilda points and cherry since those are the features it is effected by and then have to assign it to our wine dataset.*  
+
+> <span style="color:red;font-weight:bold">TODO</span>: *The RMSE comes out to 0.4687657 and it tells us how the points around the line of best fit. Thus the lower the RMSE the better our model fits our wine dataset.*
+
+## Interaction Models
+
+Add an interaction between 'points' and 'cherry'. 
+
+```{r}
+m1 <- lm(lprice ~ points * cherry, data = wine)
+
+get_regression_summaries(m1)
+```
+
+> <span style="color:red;font-weight:bold">TODO</span>: *It is the same as the code above but instead of the + to link points and cherry we use *.*
+
+> <span style="color:red;font-weight:bold">TODO</span>: *Our RMSE is 0.4685223, which is slightly better than our model above.*
+
+### The Interaction Variable
+
+> <span style="color:red;font-weight:bold">TODO</span>: *The relationship between our dependent variable lprice and our feature points changes based on whether our other feature cherry is 0 0r 1.* <br>[Explain as you would to a non-technical manager.](https://youtube.com/clip/UgkxY7ohjoimIef6zpPLjgQHqJcJHeZptuVm?feature=shared)
+
+## Applications
+
+Determine which province (Oregon, California, or New York), does the 'cherry' feature in the data affect price most?
+
+```{r}
+or <- wine %>%
+  filter(province == "Oregon")
+
+m2 <- lm(lprice ~ points * cherry, data = or)
+
+get_regression_summaries(m2)
+
+```
+```{r}
+ca <- wine %>%
+  filter(province == "California")
+
+m3 <- lm(lprice ~ points * cherry, data = ca)
+
+get_regression_summaries(m3)
+
+```
+
+```{r}
+ny <- wine %>%
+  filter(province == "New York")
+
+m4 <- lm(lprice ~ points * cherry, data = ny)
+
+get_regression_summaries(m4)
+```
+> <span style="color:red;font-weight:bold">TODO</span>: *For each of the different desired states I filtered them from the dataset and used the same linear model method but changed the data from wine to the specified state ie or for Oregon, ca for California, and ny for New York. Cherry seems to affect New York the most because the RMSE for that is the farthest away from the RMSE for all three desired states.*
+
+# Scenarios
+
+## On Accuracy
+
+Imagine a model to distinguish New York wines from those in California and Oregon. After a few days of work, you take some measurements and note: "I've achieved 91% accuracy on my model!" 
+
+Should you be impressed? Why or why not?
+
+```{r}
+# TODO: Use simple descriptive statistics from the data to justify your answer.
+```
+
+> <span style="color:red;font-weight:bold">TODO</span>: *The wines from New York have the least amount of data points and we also do not know the overall accuracy for our model as a whole. If it was 95%, then 91% would not be impressive but if it was say 60% then 91% would be really impressive. We also do not know the explainability and if we cannot explain how we classify wines then that is no good.*
+
+## On Ethics
+
+Why is understanding this vignette important to use machine learning in an ethical manner?
+
+> <span style="color:red;font-weight:bold">TODO</span>: *Our models used a dependent variable and two features which are easily explainable to stakeholders interested in our model. Many times we can sacrifice understandability for more accurate models but at what cost. It will not make sense to gain a 2% more accurate model if we can't explain it vs. our original model if it is easy to explain.*
+
+## Ignorance is no excuse
+Imagine you are working on a model to predict the likelihood that an individual loses their job as the result of the changing federal policy under new presidential administrations. You have a very large dataset with many hundreds of features, but you are worried that including indicators like age, income or gender might pose some ethical problems. When you discuss these concerns with your boss, she tells you to simply drop those features from the model. Does this solve the ethical issue? Why or why not?
+
+> <span style="color:red;font-weight:bold">TODO</span>: *It does not solve the ethical issue at its entirety because while including some of the variables might be unethical it might be better to know you are getting laid off even if it is a harsh reality. There will always be human biases and if we do not take into consideration a few relevant variables then our model likely will not be as accurate. I think an important features to consider could be age. Maybe we have a job shortage and there are many people 75+ that have a lot of money (maybe we have another feature called net worth). It could be beneficial to consider this when the government decides who will keep their jobs because if say one loses their job then it allows someone (younger) to fill their role and they get paid more and hopefully everyone can move up and advance. Overall, it could open up jobs for young individuals who need it. *
