@@ -1,0 +1,86 @@
+---
+Author: Jace Higa
+Date: Janurary 29th, 2025
+---
+**Abstract:**
+
+This is a technical blog post of **both** an HTML file *and* [.qmd file](src/wine_features.qmd) hosted on GitHub pages.
+
+
+**Step Up Code:**
+```{r}
+library(tidyverse)
+library(caret)
+library(fastDummies)
+wine <- readRDS(gzcon(url("https://github.com/cd-public/D505/raw/master/dat/wine.rds")))
+```
+
+**Explanataion:**
+
+> <span style="color:red;font-weight:bold">TODO</span>: *This code renders TODO into a red and bolded version of it.*
+
+# Feature Engineering
+
+We begin by engineering an number of features.
+
+1. Create a total of 10 features (including points). 
+2. Remove all rows with a missing value. 
+3. Ensure only log(price) and engineering features are the only columns that remain in the `wino` dataframe.
+
+```{r}
+wino <- wine %>% 
+  mutate(points = fct_lump(factor(points), 5)) %>%
+  mutate(country = fct_lump(country, 4)) %>%
+  mutate(lprice=log(price)) %>%
+  select(lprice, points, country) %>%
+  drop_na(.)
+```
+
+# Caret
+
+We now use a train/test split to evaluate the features.
+
+1. Use the Caret library to partition the wino dataframe into an 80/20 split. 
+2. Run a linear regression with bootstrap resampling. 
+3. Report RMSE on the test partition of the data.
+
+```{r}
+# 80/20 Split
+wine_index <- createDataPartition(wino$lprice, p = 0.8, list = FALSE)
+wino_tr <- wino[wine_index, ]
+wino_te <- wino[-wine_index, ]
+```
+
+
+```{r}
+# Linear Regression with Bootstrap Resampling
+
+set.seed(5)
+
+m1 <- train(lprice ~ points + country,
+                  data = wino_tr, 
+                  method = "lm", 
+                  trControl = trainControl(method = "boot", number = ))
+
+m1
+```
+
+
+```{r}
+# RMSE for Test Partition of Data
+postResample(
+  pred = predict(m1, wino_te),
+  obs = wino_te$lprice
+)
+
+## RMSE = 0.6138948
+```
+
+# Variable selection
+
+We now graph the importance of your 10 features.
+
+```{r}
+# Graph!
+plot(varImp(m1, scale = TRUE))
+```
